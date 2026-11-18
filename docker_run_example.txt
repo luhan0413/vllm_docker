@@ -1,0 +1,45 @@
+docker run -d \
+  --name phison-npu_vllm \
+  --security-opt seccomp=unconfined \
+  --pid=host \
+  --ipc=host \
+  --device=/dev/pnpu0:/dev/pnpu0 \
+  --device=/dev/pnpu1:/dev/pnpu1 \
+  --device=/dev/png0n1:/dev/png0n1 \
+  --device=/dev/png1n1:/dev/png1n1 \
+  -p 8000:8000 \
+  --mount type=bind,src=/home/host-phison/Desktop/model_zoo/Meta-Llama-3.1-8B-W8A8,dst=/Llama-3.1-8B-Instruct-W8A8,readonly \
+  --mount type=bind,src=/home/host-phison/Desktop/vllm-docker/entrypoint.sh,dst=/phison_npu_vllm/entrypoint.sh,readonly \
+  luhan413/phison-npu-vllm:3.4.0
+
+# 修改本機 entrypoint.sh 後，重啟即可套用，不需重新 build
+docker restart phison-npu_vllm
+
+# 重新啟動 Open WebUI 服務
+docker restart open-webui-drug
+docker restart open-webui-original
+
+#指令分界
+docker run [Docker 的設定] \
+  luhan413/phison-npu-vllm:3.4.0 \
+  [傳給容器內程式的設定（需啟動程式支援）]
+Image 名稱前面：設定容器、裝置、檔案與網路。
+Image 名稱後面：傳給 image 的啟動程式。目前提供的 entrypoint.sh 支援命令列參數，也可以直接修改掛載的 entrypoint.sh。
+
+
+--device=主機上的裝置路徑:容器內的裝置路徑
+
+
+
+#查看vLLM log
+docker logs -f --tail 100 phison-npu_vllm
+
+#互動
+docker exec -it phison-npu_vllm sh
+
+#清除 Docker 建置映像檔時產生、目前不再使用的 Build Cache（建置快取）
+docker builder prune
+
+#停止vllm
+docker stop phison-npu_vllm
+docker rm phison-npu_vllm
